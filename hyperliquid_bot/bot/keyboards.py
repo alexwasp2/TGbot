@@ -27,3 +27,11 @@ def settings_menu_keyboard():
         ["🎛 Фильтры", "📈 Тиры"],
         ["🎯 Монеты", "🔙 Назад"],
     ], resize_keyboard=True)
+
+
+def railway_keyboard():
+    return ReplyKeyboardMarkup([
+        ["⛔ Остановить деплой"],
+        ["▶️ Запустить деплой"],
+        ["🔙 Назад"],
+    ], resize_keyboard=True)

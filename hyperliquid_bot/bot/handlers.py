@@ -2,10 +2,15 @@ import state
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
 
+from config import ADMIN_ID
 from storage.persistence import save_custom_data, save_settings
 from utils.formatters import fmt_usd
-from bot.keyboards import main_menu_keyboard, back_keyboard, wallets_manage_keyboard, settings_menu_keyboard
+from bot.keyboards import main_menu_keyboard, back_keyboard, wallets_manage_keyboard, settings_menu_keyboard, railway_keyboard
 from bot.analytics import get_analytics_text
+
+
+def is_admin(update: Update) -> bool:
+    return str(update.effective_user.id) == str(ADMIN_ID)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -16,6 +21,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👋 <b>HyperLiquid монитор</b>\n\nВыбери раздел:",
         parse_mode="HTML",
         reply_markup=main_menu_keyboard(),
+    )
+
+
+async def railway_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update):
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+    uid = update.effective_user.id
+    state.user_state[uid] = {"mode": "railway"}
+    await update.message.reply_text(
+        "🚂 <b>Управление Railway</b>\n\nОстановка деплоя отключит бота через несколько секунд.",
+        parse_mode="HTML",
+        reply_markup=railway_keyboard(),
     )
 
 
@@ -243,6 +261,35 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     reply_markup=back_keyboard(),
                 )
         return
+
+    if mode == "railway":
+        if text == "🔙 Назад":
+            state.user_state.pop(uid, None)
+            await update.message.reply_text("👋 <b>Главное меню</b>", parse_mode="HTML", reply_markup=main_menu_keyboard())
+            return
+        if not is_admin(update):
+            await update.message.reply_text("⛔ Нет доступа.")
+            return
+        if text == "⛔ Остановить деплой":
+            await update.message.reply_text(
+                "⏳ Останавливаю деплой...\n\nБот уйдёт в офлайн через несколько секунд.",
+                parse_mode="HTML",
+                reply_markup=railway_keyboard(),
+            )
+            try:
+                from api.railway import stop_service
+                stop_service()
+            except Exception as e:
+                await update.message.reply_text(f"❌ Ошибка: {e}", parse_mode="HTML", reply_markup=railway_keyboard())
+            return
+        if text == "▶️ Запустить деплой":
+            try:
+                from api.railway import start_service
+                start_service()
+                await update.message.reply_text("✅ Деплой запущен!", parse_mode="HTML", reply_markup=railway_keyboard())
+            except Exception as e:
+                await update.message.reply_text(f"❌ Ошибка: {e}", parse_mode="HTML", reply_markup=railway_keyboard())
+            return
 
     # Назад
     if text == "🔙 Назад":

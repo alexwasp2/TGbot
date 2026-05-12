@@ -5,7 +5,7 @@ from config import TG_BOT_TOKEN, TG_CHAT_ID
 from storage.persistence import load_settings, load_volume_history, load_custom_data
 from monitor.positions import monitor_loop
 from api.binance import binance_thread
-from bot.handlers import start, message_handler
+from bot.handlers import start, message_handler, railway_command
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 
@@ -30,6 +30,7 @@ def main():
 
     app = Application.builder().token(TG_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("railway", railway_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
     app.run_polling(drop_pending_updates=True)
 
