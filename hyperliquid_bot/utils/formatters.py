@@ -5,6 +5,7 @@ from config import TG_BOT_TOKEN, TG_CHAT_ID
 
 
 def fmt_usd(val):
+    val = float(val)
     if val >= 1_000_000_000:
         return f"${val/1_000_000_000:.1f}B"
     elif val >= 1_000_000:
@@ -15,6 +16,7 @@ def fmt_usd(val):
 
 
 def fmt_val(val):
+    val = float(val)
     if val >= 1_000_000_000:
         return f"{val/1_000_000_000:.1f}B"
     elif val >= 1_000_000:

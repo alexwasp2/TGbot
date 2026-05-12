@@ -53,7 +53,7 @@ def load_custom_data():
             if isinstance(loaded, str):
                 loaded = json.loads(loaded)
             if isinstance(loaded, dict):
-                state.custom_walls = loaded
+                state.custom_walls = {k: float(v) for k, v in loaded.items()}
                 redis_ok = True
         except:
             pass
@@ -75,7 +75,7 @@ def load_custom_data():
             with open(CUSTOM_DATA_FILE, "r") as f:
                 saved = json.load(f)
             if isinstance(saved.get("custom_walls"), dict):
-                state.custom_walls = saved["custom_walls"]
+                state.custom_walls = {k: float(v) for k, v in saved["custom_walls"].items()}
             if isinstance(saved.get("watched_wallets"), dict):
                 state.watched_wallets = saved["watched_wallets"]
             print("Файл: custom_data загружен")
