@@ -36,6 +36,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if text == "⚙️ Настройки":
+        state.user_state.pop(uid, None)
         state.users_in_settings.add(uid)
         await update.message.reply_text("⚙️ <b>Настройки</b>", parse_mode="HTML", reply_markup=settings_menu_keyboard())
         return
@@ -93,12 +94,14 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if text == "🎯 Монеты":
         if not state.custom_walls:
-            msg = "🎯 Пока нет кастомных монет.\n\nФормат: <code>BTCUSDT 5000000</code>"
+            msg = "🎯 <b>Кастомные монеты</b>\n\nПока пусто.\n\n"
         else:
             msg = "🎯 <b>Кастомные монеты:</b>\n\n"
             for sym, wall in state.custom_walls.items():
                 msg += f"• {sym}: {fmt_usd(wall)}\n"
-            msg += "\nОтправь <code>МОНЕТА 0</code> чтобы удалить"
+            msg += "\n"
+        msg += "➕ Добавить/изменить:\n<code>BTCUSDT 5000000</code>\n\n"
+        msg += "❌ Удалить:\n<code>BTCUSDT 0</code>"
         kb = ReplyKeyboardMarkup([["🔙 Назад"]], resize_keyboard=True)
         await update.message.reply_text(msg, parse_mode="HTML", reply_markup=kb)
         state.user_state[uid] = {"mode": "coins"}
@@ -210,20 +213,23 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         current_idx = state.user_state.get(uid, {}).get("idx")
         if current_idx is not None:
+            use_millions = current_idx >= 3
             try:
                 val = int(text)
-                state.settings["tiers"][current_idx]["min_wall"] = val
+                state.settings["tiers"][current_idx]["min_wall"] = val * 1000 if use_millions else val
                 save_settings()
                 await update.message.reply_text("✅ Сохранено!", parse_mode="HTML", reply_markup=settings_menu_keyboard())
                 state.user_state.pop(uid, None)
             except:
-                await update.message.reply_text("❌ Введи целое число (в $K):", parse_mode="HTML", reply_markup=back_keyboard())
+                unit = "$M" if use_millions else "$K"
+                await update.message.reply_text(f"❌ Введи целое число (в {unit}):", parse_mode="HTML", reply_markup=back_keyboard())
         else:
             try:
                 tier_num = int(text) - 1
                 if 0 <= tier_num < len(state.settings["tiers"]):
                     state.user_state[uid] = {"mode": "tiers", "idx": tier_num}
-                    await update.message.reply_text("Введи мин. стену в $K:", parse_mode="HTML", reply_markup=back_keyboard())
+                    unit = "$M" if tier_num >= 3 else "$K"
+                    await update.message.reply_text(f"Введи мин. стену в {unit}:", parse_mode="HTML", reply_markup=back_keyboard())
                 else:
                     await update.message.reply_text(
                         f"❌ Неверный номер. Введи от 1 до {len(state.settings['tiers'])}:",
