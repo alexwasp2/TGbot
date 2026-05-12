@@ -3,6 +3,8 @@ import time
 import state
 from utils.formatters import fmt_usd, fmt_val, get_min_wall_usd, send_message
 
+wall_candidates = {}  # {(symbol, round(price,6), side): tick_count}
+
 
 def check_orderbook_walls(symbol, bids, asks):
     try:
@@ -49,10 +51,23 @@ def check_orderbook_walls(symbol, bids, asks):
 
         walls = [o for o in all_orders if o["value"] >= avg_value * multiplier and o["value"] >= min_wall]
         if not walls:
+            for key in list(wall_candidates):
+                if key[0] == symbol:
+                    wall_candidates[key] -= 1
+                    if wall_candidates[key] <= 0:
+                        del wall_candidates[key]
             return
 
         walls.sort(key=lambda x: x["value"], reverse=True)
         top = walls[0]
+
+        # Decrement counters for walls no longer present
+        current_keys = {(symbol, round(o["price"], 6), o["side"]) for o in walls}
+        for key in list(wall_candidates):
+            if key[0] == symbol and key not in current_keys:
+                wall_candidates[key] -= 1
+                if wall_candidates[key] <= 0:
+                    del wall_candidates[key]
 
         bid_walls = [o for o in walls if o["side"] == "BID"]
         ask_walls = [o for o in walls if o["side"] == "ASK"]
@@ -69,6 +84,12 @@ def check_orderbook_walls(symbol, bids, asks):
 
             if size_ratio > 0.80 and dist_diff_ratio < 0.30:
                 return
+
+        # Tick counter: require wall to be seen 3 times before alerting
+        wall_key = (symbol, round(top["price"], 6), top["side"])
+        wall_candidates[wall_key] = wall_candidates.get(wall_key, 0) + 1
+        if wall_candidates[wall_key] < 3:
+            return
 
         dist_pct = top["dist_pct"]
         side_emoji = "🟢" if top["side"] == "BID" else "🔴"
@@ -102,6 +123,7 @@ def check_orderbook_walls(symbol, bids, asks):
 
         send_message("\n".join(parts))
         state.wall_cooldowns[symbol] = now
+        wall_candidates[wall_key] = 0
         print(f"Плотняха: {symbol} {fmt_usd(top['value'])}")
 
     except Exception as e:

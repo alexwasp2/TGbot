@@ -13,6 +13,7 @@ CHECK_INTERVAL = 30
 VOLUME_SAVE_INTERVAL = 3600
 VOLUME_FILE = "volume_history.json"
 SETTINGS_FILE = "settings.json"
+CUSTOM_DATA_FILE = "custom_data.json"
 
 DEFAULT_SETTINGS = {
     "price_range_pct": 2.0,

@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-from config import DEFAULT_SETTINGS, SETTINGS_FILE, VOLUME_FILE
+from config import DEFAULT_SETTINGS, SETTINGS_FILE, VOLUME_FILE, CUSTOM_DATA_FILE
 import state
 from storage.redis_client import redis_get, redis_set
 
@@ -44,6 +44,8 @@ def save_settings():
 
 
 def load_custom_data():
+    redis_ok = False
+
     data = redis_get("custom_walls")
     if data:
         try:
@@ -52,8 +54,10 @@ def load_custom_data():
                 loaded = json.loads(loaded)
             if isinstance(loaded, dict):
                 state.custom_walls = loaded
+                redis_ok = True
         except:
             pass
+
     data = redis_get("watched_wallets")
     if data:
         try:
@@ -62,13 +66,31 @@ def load_custom_data():
                 loaded = json.loads(loaded)
             if isinstance(loaded, dict):
                 state.watched_wallets = loaded
+                redis_ok = True
         except:
             pass
+
+    if not redis_ok and os.path.exists(CUSTOM_DATA_FILE):
+        try:
+            with open(CUSTOM_DATA_FILE, "r") as f:
+                saved = json.load(f)
+            if isinstance(saved.get("custom_walls"), dict):
+                state.custom_walls = saved["custom_walls"]
+            if isinstance(saved.get("watched_wallets"), dict):
+                state.watched_wallets = saved["watched_wallets"]
+            print("Файл: custom_data загружен")
+        except Exception as e:
+            print(f"Ошибка загрузки custom_data: {e}")
 
 
 def save_custom_data():
     redis_set("custom_walls", json.dumps(state.custom_walls))
     redis_set("watched_wallets", json.dumps(state.watched_wallets))
+    try:
+        with open(CUSTOM_DATA_FILE, "w") as f:
+            json.dump({"custom_walls": state.custom_walls, "watched_wallets": state.watched_wallets}, f)
+    except Exception as e:
+        print(f"Ошибка сохранения custom_data: {e}")
 
 
 def load_volume_history():
