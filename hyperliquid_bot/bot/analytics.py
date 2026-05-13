@@ -10,5 +10,5 @@ def get_analytics_text(hours_ago, label):
     msg = f"📊 <b>Изменение объёма за {label}:</b>\n\n"
     for r in result[:15]:
         sign = "+" if r["pct"] > 0 else ""
-        msg += f"• {r['coin']}: {sign}{r['pct']:.0f}%\n"
+        msg += f"• <code>{r['coin']}</code>: {sign}{r['pct']:.0f}%\n"
     return msg
