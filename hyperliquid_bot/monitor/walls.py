@@ -10,8 +10,6 @@ spot_wall_candidates = {}   # same structure for spot
 def check_orderbook_walls(symbol, bids, asks, market="futures"):
     try:
         s = state.spot_settings if market == "spot" else state.settings
-        if market == "spot":
-            print(f"SPOT CHECK: {symbol}, vol={state.spot_symbol_volumes.get(symbol, 0):.0f}, bids={len(bids)}")
         if "cooldown_min" not in s:
             return
 
