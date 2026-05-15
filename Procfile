@@ -1,1 +1,1 @@
-worker: python hyperliquid_bot/main.py
+worker: python TGbot/main.py

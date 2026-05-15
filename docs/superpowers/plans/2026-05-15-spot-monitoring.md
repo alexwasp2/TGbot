@@ -16,29 +16,29 @@
 
 | File | Change |
 |------|--------|
-| `hyperliquid_bot/config.py` | Add `DEFAULT_SPOT_SETTINGS`, `SPOT_SETTINGS_FILE` |
-| `hyperliquid_bot/state.py` | Add `spot_settings`, `spot_custom_walls`, `spot_wall_cooldowns`, `spot_symbol_volumes` |
-| `hyperliquid_bot/storage/persistence.py` | Add `load_spot_settings()`, `save_spot_settings()`, extend `load_custom_data`/`save_custom_data` for `spot_custom_walls` |
-| `hyperliquid_bot/main.py` | Add `load_spot_settings()` call |
-| `hyperliquid_bot/utils/formatters.py` | Add `market` param to `get_min_wall_usd` |
-| `hyperliquid_bot/monitor/walls.py` | Parameterize `check_orderbook_walls`, add `spot_wall_candidates`, add F/S markers |
-| `hyperliquid_bot/api/binance.py` | Add `fetch_spot_tickers()`, `binance_spot_ws_stream()`, update `run_binance_monitor()` |
-| `hyperliquid_bot/bot/keyboards.py` | Add `settings_type_keyboard()`, add `market` param to `settings_menu_keyboard()` |
-| `hyperliquid_bot/bot/handlers.py` | Add Фьюч/Спот selector flow, route all settings modes by market |
+| `TGbot/config.py` | Add `DEFAULT_SPOT_SETTINGS`, `SPOT_SETTINGS_FILE` |
+| `TGbot/state.py` | Add `spot_settings`, `spot_custom_walls`, `spot_wall_cooldowns`, `spot_symbol_volumes` |
+| `TGbot/storage/persistence.py` | Add `load_spot_settings()`, `save_spot_settings()`, extend `load_custom_data`/`save_custom_data` for `spot_custom_walls` |
+| `TGbot/main.py` | Add `load_spot_settings()` call |
+| `TGbot/utils/formatters.py` | Add `market` param to `get_min_wall_usd` |
+| `TGbot/monitor/walls.py` | Parameterize `check_orderbook_walls`, add `spot_wall_candidates`, add F/S markers |
+| `TGbot/api/binance.py` | Add `fetch_spot_tickers()`, `binance_spot_ws_stream()`, update `run_binance_monitor()` |
+| `TGbot/bot/keyboards.py` | Add `settings_type_keyboard()`, add `market` param to `settings_menu_keyboard()` |
+| `TGbot/bot/handlers.py` | Add Фьюч/Спот selector flow, route all settings modes by market |
 
 ---
 
 ## Task 1: Foundation — config, state, persistence
 
 **Files:**
-- Modify: `hyperliquid_bot/config.py`
-- Modify: `hyperliquid_bot/state.py`
-- Modify: `hyperliquid_bot/storage/persistence.py`
-- Modify: `hyperliquid_bot/main.py`
+- Modify: `TGbot/config.py`
+- Modify: `TGbot/state.py`
+- Modify: `TGbot/storage/persistence.py`
+- Modify: `TGbot/main.py`
 
 - [ ] **Step 1.1: Add DEFAULT_SPOT_SETTINGS and SPOT_SETTINGS_FILE to config.py**
 
-In `hyperliquid_bot/config.py`, add after the `DEFAULT_SETTINGS` block:
+In `TGbot/config.py`, add after the `DEFAULT_SETTINGS` block:
 
 ```python
 SPOT_SETTINGS_FILE = "spot_settings.json"
@@ -60,7 +60,7 @@ DEFAULT_SPOT_SETTINGS = {
 
 - [ ] **Step 1.2: Add spot fields to state.py**
 
-Replace the entire `hyperliquid_bot/state.py` with:
+Replace the entire `TGbot/state.py` with:
 
 ```python
 from config import DEFAULT_SETTINGS, DEFAULT_SPOT_SETTINGS, DEFAULT_WALLET
@@ -83,7 +83,7 @@ user_state = {}
 - [ ] **Step 1.3: Verify state imports**
 
 ```
-cd hyperliquid_bot && python -c "import state; print('spot_settings min_vol:', state.spot_settings['min_symbol_volume_m']); print('OK')"
+cd TGbot && python -c "import state; print('spot_settings min_vol:', state.spot_settings['min_symbol_volume_m']); print('OK')"
 ```
 
 Expected:
@@ -94,7 +94,7 @@ OK
 
 - [ ] **Step 1.4: Add load_spot_settings and save_spot_settings to persistence.py**
 
-Update the import line at the top of `hyperliquid_bot/storage/persistence.py`:
+Update the import line at the top of `TGbot/storage/persistence.py`:
 
 ```python
 from config import DEFAULT_SETTINGS, DEFAULT_SPOT_SETTINGS, SETTINGS_FILE, SPOT_SETTINGS_FILE, VOLUME_FILE, CUSTOM_DATA_FILE
@@ -187,7 +187,7 @@ def save_custom_data():
 
 - [ ] **Step 1.7: Add load_spot_settings call to main.py**
 
-In `hyperliquid_bot/main.py`, update the import:
+In `TGbot/main.py`, update the import:
 
 ```python
 from storage.persistence import load_settings, load_spot_settings, load_volume_history, load_custom_data
@@ -205,7 +205,7 @@ And in `main()`, add `load_spot_settings()` right after `load_settings()`:
 - [ ] **Step 1.8: Verify persistence imports**
 
 ```
-cd hyperliquid_bot && python -c "from storage.persistence import load_spot_settings, save_spot_settings; print('OK')"
+cd TGbot && python -c "from storage.persistence import load_spot_settings, save_spot_settings; print('OK')"
 ```
 
 Expected:
@@ -216,7 +216,7 @@ OK
 - [ ] **Step 1.9: Commit**
 
 ```bash
-git add hyperliquid_bot/config.py hyperliquid_bot/state.py hyperliquid_bot/storage/persistence.py hyperliquid_bot/main.py
+git add TGbot/config.py TGbot/state.py TGbot/storage/persistence.py TGbot/main.py
 git commit -m "feat(sprint1): add spot state, config defaults, persistence"
 ```
 
@@ -225,12 +225,12 @@ git commit -m "feat(sprint1): add spot state, config defaults, persistence"
 ## Task 2: Wall detection core — walls.py + formatters.py
 
 **Files:**
-- Modify: `hyperliquid_bot/utils/formatters.py`
-- Modify: `hyperliquid_bot/monitor/walls.py`
+- Modify: `TGbot/utils/formatters.py`
+- Modify: `TGbot/monitor/walls.py`
 
 - [ ] **Step 2.1: Update get_min_wall_usd to accept market param**
 
-In `hyperliquid_bot/utils/formatters.py`, replace the `get_min_wall_usd` function:
+In `TGbot/utils/formatters.py`, replace the `get_min_wall_usd` function:
 
 ```python
 def get_min_wall_usd(volume_24h_usd, market="futures"):
@@ -244,7 +244,7 @@ def get_min_wall_usd(volume_24h_usd, market="futures"):
 
 - [ ] **Step 2.2: Rewrite walls.py with market param and spot_wall_candidates**
 
-Replace the entire `hyperliquid_bot/monitor/walls.py` with:
+Replace the entire `TGbot/monitor/walls.py` with:
 
 ```python
 import time
@@ -388,7 +388,7 @@ def check_orderbook_walls(symbol, bids, asks, market="futures"):
 - [ ] **Step 2.3: Verify walls.py imports cleanly**
 
 ```
-cd hyperliquid_bot && python -c "from monitor.walls import check_orderbook_walls, wall_candidates, spot_wall_candidates; print('OK')"
+cd TGbot && python -c "from monitor.walls import check_orderbook_walls, wall_candidates, spot_wall_candidates; print('OK')"
 ```
 
 Expected:
@@ -399,7 +399,7 @@ OK
 - [ ] **Step 2.4: Smoke-test market routing**
 
 ```
-cd hyperliquid_bot && python -c "
+cd TGbot && python -c "
 import state
 from monitor.walls import check_orderbook_walls
 state.spot_settings['cooldown_min'] = 99
@@ -418,7 +418,7 @@ No crash — routing OK
 - [ ] **Step 2.5: Commit**
 
 ```bash
-git add hyperliquid_bot/utils/formatters.py hyperliquid_bot/monitor/walls.py
+git add TGbot/utils/formatters.py TGbot/monitor/walls.py
 git commit -m "feat(sprint2): parameterize walls by market, add F/S alert markers"
 ```
 
@@ -427,11 +427,11 @@ git commit -m "feat(sprint2): parameterize walls by market, add F/S alert marker
 ## Task 3: Binance Spot WebSocket
 
 **Files:**
-- Modify: `hyperliquid_bot/api/binance.py`
+- Modify: `TGbot/api/binance.py`
 
 - [ ] **Step 3.1: Replace binance.py with spot support**
 
-Replace the entire `hyperliquid_bot/api/binance.py` with:
+Replace the entire `TGbot/api/binance.py` with:
 
 ```python
 import asyncio
@@ -558,7 +558,7 @@ def binance_thread():
 - [ ] **Step 3.2: Verify binance.py imports**
 
 ```
-cd hyperliquid_bot && python -c "from api.binance import fetch_spot_tickers, binance_spot_ws_stream; print('OK')"
+cd TGbot && python -c "from api.binance import fetch_spot_tickers, binance_spot_ws_stream; print('OK')"
 ```
 
 Expected:
@@ -569,7 +569,7 @@ OK
 - [ ] **Step 3.3: Test spot ticker fetch (requires network)**
 
 ```
-cd hyperliquid_bot && python -c "
+cd TGbot && python -c "
 import state
 from api.binance import fetch_spot_tickers
 syms = fetch_spot_tickers()
@@ -590,7 +590,7 @@ BTCUSDT present: True
 - [ ] **Step 3.4: Commit**
 
 ```bash
-git add hyperliquid_bot/api/binance.py
+git add TGbot/api/binance.py
 git commit -m "feat(sprint3): add Binance spot WebSocket streams"
 ```
 
@@ -599,12 +599,12 @@ git commit -m "feat(sprint3): add Binance spot WebSocket streams"
 ## Task 4: UI — keyboards and handlers
 
 **Files:**
-- Modify: `hyperliquid_bot/bot/keyboards.py`
-- Modify: `hyperliquid_bot/bot/handlers.py`
+- Modify: `TGbot/bot/keyboards.py`
+- Modify: `TGbot/bot/handlers.py`
 
 - [ ] **Step 4.1: Replace keyboards.py**
 
-Replace the entire `hyperliquid_bot/bot/keyboards.py` with:
+Replace the entire `TGbot/bot/keyboards.py` with:
 
 ```python
 import state
@@ -658,7 +658,7 @@ Note: "🎯 Монеты" button gains a market label so the user can see which 
 
 - [ ] **Step 4.2: Replace handlers.py**
 
-Replace the entire `hyperliquid_bot/bot/handlers.py` with:
+Replace the entire `TGbot/bot/handlers.py` with:
 
 ```python
 import state
@@ -1035,7 +1035,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 - [ ] **Step 4.3: Verify handlers.py imports**
 
 ```
-cd hyperliquid_bot && python -c "from bot.handlers import message_handler; print('OK')"
+cd TGbot && python -c "from bot.handlers import message_handler; print('OK')"
 ```
 
 Expected:
@@ -1046,7 +1046,7 @@ OK
 - [ ] **Step 4.4: Commit**
 
 ```bash
-git add hyperliquid_bot/bot/keyboards.py hyperliquid_bot/bot/handlers.py
+git add TGbot/bot/keyboards.py TGbot/bot/handlers.py
 git commit -m "feat(sprint4): add Фьюч/Спот settings selector, route handlers by market"
 ```
 
@@ -1054,7 +1054,7 @@ git commit -m "feat(sprint4): add Фьюч/Спот settings selector, route han
 
 ## Final Verification Checklist
 
-- [ ] Bot starts: `cd hyperliquid_bot && python main.py` — no import errors in first 5 seconds
+- [ ] Bot starts: `cd TGbot && python main.py` — no import errors in first 5 seconds
 - [ ] Logs show `Binance Futures: N монет` and `Binance Spot: N монет`
 - [ ] ⚙️ Настройки → shows Фьюч / Спот buttons
 - [ ] Фьюч → shows Фильтры / Тиры / Монеты (Фьюч) menu
