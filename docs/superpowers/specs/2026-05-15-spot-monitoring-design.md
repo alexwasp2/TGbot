@@ -177,6 +177,14 @@ Never use direct index — protects stale sessions where `market` key may be abs
 | tiers | `state.settings["tiers"]` | `state.spot_settings["tiers"]` |
 | coins | `state.custom_walls` | `state.spot_custom_walls` |
 
+**Volume lookup in `walls.py`** (Sprint 2 critical):
+
+| field | market=futures | market=spot |
+|-------|---------------|-------------|
+| symbol volumes | `state.symbol_volumes` | `state.spot_symbol_volumes` |
+
+Do NOT fall back to `state.symbol_volumes` in the spot path — volumes differ between markets and cross-reading would produce incorrect tier selection.
+
 Save calls route to matching persistence functions (`save_settings()` vs `save_spot_settings()`).
 
 ---
