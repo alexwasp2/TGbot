@@ -100,3 +100,15 @@ def format_order_alert(order, wallet, wallet_name):
         f'🔗 <a href="https://hyperdash.com/?snoop={wallet}">HyperDash</a>',
     ]
     return "\n".join(parts)
+
+
+def send_report(text, inline_keyboard=None):
+    """Отправляет сообщение с опциональной inline-клавиатурой (для дневного репорта)."""
+    url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
+    payload = {"chat_id": TG_CHAT_ID, "text": text, "parse_mode": "HTML"}
+    if inline_keyboard:
+        payload["reply_markup"] = {"inline_keyboard": inline_keyboard}
+    try:
+        requests.post(url, json=payload, timeout=10)
+    except Exception as e:
+        print(f"send_report error: {e}")
