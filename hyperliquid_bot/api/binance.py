@@ -68,7 +68,7 @@ async def binance_ws_stream(symbol):
 
 
 async def binance_spot_ws_stream(symbol):
-    url = f"wss://stream.binance.com:9443/ws/{symbol.lower()}@depth20@100ms"
+    url = f"wss://stream.binance.com:9443/ws/{symbol.lower()}@depth20"
     error_count = 0
     while True:
         try:
