@@ -42,10 +42,10 @@ DEFAULT_SPOT_SETTINGS = {
     "min_multiplier": 3,
     "min_symbol_volume_m": 1,
     "tiers": [
-        {"vol_from": 1,    "vol_to": 10,    "min_wall": 100},
         {"vol_from": 10,   "vol_to": 50,    "min_wall": 200},
-        {"vol_from": 50,   "vol_to": 200,   "min_wall": 500},
-        {"vol_from": 200,  "vol_to": 1000,  "min_wall": 1000},
-        {"vol_from": 1000, "vol_to": 999999, "min_wall": 2000},
+        {"vol_from": 50,   "vol_to": 80,    "min_wall": 300},
+        {"vol_from": 100,  "vol_to": 300,   "min_wall": 500},
+        {"vol_from": 500,  "vol_to": 1000,  "min_wall": 1000},
+        {"vol_from": 5000, "vol_to": 999999, "min_wall": 3000},
     ]
 }

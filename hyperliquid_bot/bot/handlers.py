@@ -127,7 +127,8 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = f"📈 <b>Тиры по объёму ({label}):</b>\n\n"
         for i, tier in enumerate(t):
             wall = f"${tier['min_wall']}K" if tier["min_wall"] < 1000 else f"${tier['min_wall'] // 1000}M"
-            msg += f"{i+1}. ${tier['vol_from']}M–${tier['vol_to']}M → {wall}\n"
+            vol_to = "∞" if tier["vol_to"] >= 999999 else f"${tier['vol_to']}M"
+            msg += f"{i+1}. ${tier['vol_from']}M–{vol_to} → {wall}\n"
         msg += "\nОтправь номер для изменения:"
         kb = ReplyKeyboardMarkup([["1", "2", "3"], ["4", "5"], ["🔙 Назад"]], resize_keyboard=True)
         await update.message.reply_text(msg, parse_mode="HTML", reply_markup=kb)
