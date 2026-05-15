@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-from config import DEFAULT_SETTINGS, SETTINGS_FILE, VOLUME_FILE, CUSTOM_DATA_FILE
+from config import DEFAULT_SETTINGS, DEFAULT_SPOT_SETTINGS, SETTINGS_FILE, SPOT_SETTINGS_FILE, VOLUME_FILE, CUSTOM_DATA_FILE
 import state
 from storage.redis_client import redis_get, redis_set
 
@@ -43,6 +43,44 @@ def save_settings():
     redis_set("settings", json.dumps(state.settings))
 
 
+def load_spot_settings():
+    data = redis_get("spot_settings")
+    if data:
+        try:
+            loaded = json.loads(data)
+            if isinstance(loaded, str):
+                loaded = json.loads(loaded)
+            state.spot_settings = dict(DEFAULT_SPOT_SETTINGS)
+            state.spot_settings.update(loaded)
+            if "tiers" not in loaded or not isinstance(loaded.get("tiers"), list):
+                state.spot_settings["tiers"] = DEFAULT_SPOT_SETTINGS["tiers"]
+            print("Redis: спот-настройки загружены")
+            return
+        except Exception as e:
+            print(f"Redis spot ошибка: {e}")
+    if os.path.exists(SPOT_SETTINGS_FILE):
+        try:
+            with open(SPOT_SETTINGS_FILE, "r") as f:
+                loaded = json.load(f)
+            state.spot_settings = dict(DEFAULT_SPOT_SETTINGS)
+            state.spot_settings.update(loaded)
+            print("Файл: спот-настройки загружены")
+            return
+        except Exception as e:
+            print(f"Ошибка файла spot: {e}")
+    state.spot_settings = dict(DEFAULT_SPOT_SETTINGS)
+    print("Используются дефолт спот-настройки")
+
+
+def save_spot_settings():
+    redis_set("spot_settings", json.dumps(state.spot_settings))
+    try:
+        with open(SPOT_SETTINGS_FILE, "w") as f:
+            json.dump(state.spot_settings, f)
+    except Exception as e:
+        print(f"Ошибка сохранения спот-настроек: {e}")
+
+
 def load_custom_data():
     redis_ok = False
 
@@ -70,6 +108,17 @@ def load_custom_data():
         except:
             pass
 
+    data = redis_get("spot_custom_walls")
+    if data:
+        try:
+            loaded = json.loads(data) if isinstance(data, str) else data
+            if isinstance(loaded, str):
+                loaded = json.loads(loaded)
+            if isinstance(loaded, dict):
+                state.spot_custom_walls = {k: float(v) for k, v in loaded.items()}
+        except:
+            pass
+
     if not redis_ok and os.path.exists(CUSTOM_DATA_FILE):
         try:
             with open(CUSTOM_DATA_FILE, "r") as f:
@@ -78,6 +127,8 @@ def load_custom_data():
                 state.custom_walls = {k: float(v) for k, v in saved["custom_walls"].items()}
             if isinstance(saved.get("watched_wallets"), dict):
                 state.watched_wallets = saved["watched_wallets"]
+            if isinstance(saved.get("spot_custom_walls"), dict):
+                state.spot_custom_walls = {k: float(v) for k, v in saved["spot_custom_walls"].items()}
             print("Файл: custom_data загружен")
         except Exception as e:
             print(f"Ошибка загрузки custom_data: {e}")
@@ -86,9 +137,14 @@ def load_custom_data():
 def save_custom_data():
     redis_set("custom_walls", json.dumps(state.custom_walls))
     redis_set("watched_wallets", json.dumps(state.watched_wallets))
+    redis_set("spot_custom_walls", json.dumps(state.spot_custom_walls))
     try:
         with open(CUSTOM_DATA_FILE, "w") as f:
-            json.dump({"custom_walls": state.custom_walls, "watched_wallets": state.watched_wallets}, f)
+            json.dump({
+                "custom_walls": state.custom_walls,
+                "watched_wallets": state.watched_wallets,
+                "spot_custom_walls": state.spot_custom_walls,
+            }, f)
     except Exception as e:
         print(f"Ошибка сохранения custom_data: {e}")
 

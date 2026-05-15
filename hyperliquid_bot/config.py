@@ -19,6 +19,7 @@ CHECK_INTERVAL = 30
 VOLUME_SAVE_INTERVAL = 3600
 VOLUME_FILE = "volume_history.json"
 SETTINGS_FILE = "settings.json"
+SPOT_SETTINGS_FILE = "spot_settings.json"
 CUSTOM_DATA_FILE = "custom_data.json"
 
 DEFAULT_SETTINGS = {
@@ -32,5 +33,19 @@ DEFAULT_SETTINGS = {
         {"vol_from": 100,  "vol_to": 300,   "min_wall": 500},
         {"vol_from": 500,  "vol_to": 1000,  "min_wall": 1000},
         {"vol_from": 5000, "vol_to": 999999, "min_wall": 3000},
+    ]
+}
+
+DEFAULT_SPOT_SETTINGS = {
+    "price_range_pct": 2.0,
+    "cooldown_min": 5,
+    "min_multiplier": 3,
+    "min_symbol_volume_m": 1,
+    "tiers": [
+        {"vol_from": 1,    "vol_to": 10,    "min_wall": 100},
+        {"vol_from": 10,   "vol_to": 50,    "min_wall": 200},
+        {"vol_from": 50,   "vol_to": 200,   "min_wall": 500},
+        {"vol_from": 200,  "vol_to": 1000,  "min_wall": 1000},
+        {"vol_from": 1000, "vol_to": 999999, "min_wall": 2000},
     ]
 }
