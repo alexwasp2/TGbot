@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes
 
 from config import ADMIN_ID
 from storage.persistence import save_custom_data, save_settings, save_spot_settings
-from utils.formatters import fmt_usd
+from utils.formatters import fmt_usd, get_min_wall_usd
 from bot.keyboards import (
     main_menu_keyboard, back_keyboard, wallets_manage_keyboard,
     settings_type_keyboard, settings_menu_keyboard, railway_keyboard,
@@ -368,3 +368,30 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(f"✅ Удалён: {name}", parse_mode="HTML", reply_markup=main_menu_keyboard())
             state.user_state.pop(uid, None)
             return
+
+
+async def noise_raise_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    try:
+        _, market, symbol, pct_str = query.data.split(":")
+    except ValueError:
+        await query.answer("Неизвестная команда")
+        return
+
+    pct = int(pct_str) / 100
+    custom = state.spot_custom_walls if market == "spot" else state.custom_walls
+    volumes = state.spot_symbol_volumes if market == "spot" else state.symbol_volumes
+
+    vol = volumes.get(symbol, 0)
+    current = custom.get(symbol, get_min_wall_usd(vol, market))
+    new_val = round(current * (1 + pct))
+    custom[symbol] = new_val
+
+    from storage.persistence import save_custom_data
+    save_custom_data()
+
+    market_label = "Спот" if market == "spot" else "Фьюч"
+    await query.answer(
+        f"✅ {symbol} ({market_label}): {fmt_usd(current)} → {fmt_usd(new_val)}",
+        show_alert=True,
+    )
