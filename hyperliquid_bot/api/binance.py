@@ -77,6 +77,8 @@ async def binance_spot_ws_stream(symbol):
                 while True:
                     msg = await ws.recv()
                     data = json.loads(msg)
+                    if symbol == "BTCUSDT":
+                        print(f"SPOT RAW: {list(data.keys())} bids={len(data.get('b', []))} asks={len(data.get('a', []))}")
                     check_orderbook_walls(symbol, data.get("b", []), data.get("a", []), market="spot")
         except Exception as e:
             error_count += 1
