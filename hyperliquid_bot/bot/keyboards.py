@@ -22,10 +22,18 @@ def wallets_manage_keyboard():
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
 
-def settings_menu_keyboard():
+def settings_type_keyboard():
+    return ReplyKeyboardMarkup([
+        ["📈 Фьюч", "💰 Спот"],
+        ["🔙 Назад"],
+    ], resize_keyboard=True)
+
+
+def settings_menu_keyboard(market="futures"):
+    label = "Фьюч" if market == "futures" else "Спот"
     return ReplyKeyboardMarkup([
         ["🎛 Фильтры", "📈 Тиры"],
-        ["🎯 Монеты", "🔙 Назад"],
+        [f"🎯 Монеты ({label})", "🔙 Назад"],
     ], resize_keyboard=True)
 
 
