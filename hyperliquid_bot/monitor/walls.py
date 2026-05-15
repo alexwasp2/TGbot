@@ -3,17 +3,20 @@ import time
 import state
 from utils.formatters import fmt_usd, fmt_val, get_min_wall_usd, send_message
 
-wall_candidates = {}  # {(symbol, round(price,6), side): tick_count}
+wall_candidates = {}        # {(symbol, round(price,6), side): tick_count}
+spot_wall_candidates = {}   # same structure for spot
 
 
-def check_orderbook_walls(symbol, bids, asks):
+def check_orderbook_walls(symbol, bids, asks, market="futures"):
     try:
-        if "cooldown_min" not in state.settings:
+        s = state.spot_settings if market == "spot" else state.settings
+        if "cooldown_min" not in s:
             return
 
         now = time.time()
-        cooldown = state.settings["cooldown_min"] * 60
-        if symbol in state.wall_cooldowns and now - state.wall_cooldowns[symbol] < cooldown:
+        cooldowns = state.spot_wall_cooldowns if market == "spot" else state.wall_cooldowns
+        cooldown = s["cooldown_min"] * 60
+        if symbol in cooldowns and now - cooldowns[symbol] < cooldown:
             return
         if not bids or not asks:
             return
@@ -21,7 +24,7 @@ def check_orderbook_walls(symbol, bids, asks):
         best_bid = float(bids[0][0])
         best_ask = float(asks[0][0])
         mid_price = (best_bid + best_ask) / 2
-        price_range = state.settings["price_range_pct"] / 100
+        price_range = s["price_range_pct"] / 100
         price_low = mid_price * (1 - price_range)
         price_high = mid_price * (1 + price_range)
 
@@ -41,33 +44,36 @@ def check_orderbook_walls(symbol, bids, asks):
             return
 
         avg_value = sum(o["value"] for o in all_orders) / len(all_orders)
-        vol_24h = state.symbol_volumes.get(symbol, 0)
+        volumes = state.spot_symbol_volumes if market == "spot" else state.symbol_volumes
+        vol_24h = volumes.get(symbol, 0)
 
-        if vol_24h < state.settings["min_symbol_volume_m"] * 1_000_000:
+        if vol_24h < s["min_symbol_volume_m"] * 1_000_000:
             return
 
-        min_wall = state.custom_walls.get(symbol, get_min_wall_usd(vol_24h))
-        multiplier = state.settings["min_multiplier"]
+        custom = state.spot_custom_walls if market == "spot" else state.custom_walls
+        min_wall = custom.get(symbol, get_min_wall_usd(vol_24h, market))
+        multiplier = s["min_multiplier"]
+
+        candidates = spot_wall_candidates if market == "spot" else wall_candidates
 
         walls = [o for o in all_orders if o["value"] >= avg_value * multiplier and o["value"] >= min_wall]
         if not walls:
-            for key in list(wall_candidates):
+            for key in list(candidates):
                 if key[0] == symbol:
-                    wall_candidates[key] -= 1
-                    if wall_candidates[key] <= 0:
-                        del wall_candidates[key]
+                    candidates[key] -= 1
+                    if candidates[key] <= 0:
+                        del candidates[key]
             return
 
         walls.sort(key=lambda x: x["value"], reverse=True)
         top = walls[0]
 
-        # Decrement counters for walls no longer present
         current_keys = {(symbol, round(o["price"], 6), o["side"]) for o in walls}
-        for key in list(wall_candidates):
+        for key in list(candidates):
             if key[0] == symbol and key not in current_keys:
-                wall_candidates[key] -= 1
-                if wall_candidates[key] <= 0:
-                    del wall_candidates[key]
+                candidates[key] -= 1
+                if candidates[key] <= 0:
+                    del candidates[key]
 
         bid_walls = [o for o in walls if o["side"] == "BID"]
         ask_walls = [o for o in walls if o["side"] == "ASK"]
@@ -85,14 +91,14 @@ def check_orderbook_walls(symbol, bids, asks):
             if size_ratio > 0.80 and dist_diff_ratio < 0.30:
                 return
 
-        # Tick counter: require wall to be seen 3 times before alerting
         wall_key = (symbol, round(top["price"], 6), top["side"])
-        wall_candidates[wall_key] = wall_candidates.get(wall_key, 0) + 1
-        if wall_candidates[wall_key] < 3:
+        candidates[wall_key] = candidates.get(wall_key, 0) + 1
+        if candidates[wall_key] < 3:
             return
 
         dist_pct = top["dist_pct"]
         side_emoji = "🟢" if top["side"] == "BID" else "🔴"
+        market_marker = "S" if market == "spot" else "F"
         lots = top["value"] / top["price"] if top["price"] > 0 else 0
         vol_str = (
             f"${vol_24h/1_000_000_000:.1f}B"
@@ -111,7 +117,7 @@ def check_orderbook_walls(symbol, bids, asks):
             price_str = f"${p:.6f}"
 
         parts = [
-            f"🧱 <b>Плотняха на</b> <code>{symbol}</code> {side_emoji}",
+            f"🧱 <b>Плотняха на</b> <code>{symbol}</code> {market_marker} {side_emoji}",
             "",
             f"💰 {fmt_usd(top['value'])} ({fmt_val(lots)} лотов)",
             f"🎯 Цена: {price_str}",
@@ -122,9 +128,9 @@ def check_orderbook_walls(symbol, bids, asks):
             parts += ["", f"🔥 Кластер: {len(walls)} плотняхи рядом!"]
 
         send_message("\n".join(parts))
-        state.wall_cooldowns[symbol] = now
-        wall_candidates[wall_key] = 0
-        print(f"Плотняха: {symbol} {fmt_usd(top['value'])}")
+        cooldowns[symbol] = now
+        candidates[wall_key] = 0
+        print(f"Плотняха [{market_marker}]: {symbol} {fmt_usd(top['value'])}")
 
     except Exception as e:
         print(f"Ошибка анализа {symbol}: {e}")

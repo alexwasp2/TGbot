@@ -26,9 +26,10 @@ def fmt_val(val):
     return f"{val:.0f}"
 
 
-def get_min_wall_usd(volume_24h_usd):
+def get_min_wall_usd(volume_24h_usd, market="futures"):
     vol_m = volume_24h_usd / 1_000_000
-    for tier in state.settings["tiers"]:
+    tiers = state.spot_settings["tiers"] if market == "spot" else state.settings["tiers"]
+    for tier in tiers:
         if tier["vol_from"] <= vol_m < tier["vol_to"]:
             return tier["min_wall"] * 1000
     return 2_000_000
