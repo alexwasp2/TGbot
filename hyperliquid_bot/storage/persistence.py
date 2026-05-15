@@ -2,9 +2,16 @@ import json
 import os
 from datetime import datetime, timezone
 
-from config import DEFAULT_SETTINGS, DEFAULT_SPOT_SETTINGS, SETTINGS_FILE, SPOT_SETTINGS_FILE, VOLUME_FILE, CUSTOM_DATA_FILE
+from config import DEFAULT_SETTINGS, DEFAULT_SPOT_SETTINGS, TIER_RANGES, SETTINGS_FILE, SPOT_SETTINGS_FILE, VOLUME_FILE, CUSTOM_DATA_FILE
 import state
 from storage.redis_client import redis_get, redis_set
+
+
+def _enforce_tier_ranges(settings):
+    for i, ranges in enumerate(TIER_RANGES):
+        if i < len(settings.get("tiers", [])):
+            settings["tiers"][i]["vol_from"] = ranges["vol_from"]
+            settings["tiers"][i]["vol_to"] = ranges["vol_to"]
 
 
 def load_settings():
@@ -18,6 +25,7 @@ def load_settings():
             state.settings.update(loaded)
             if "tiers" not in loaded or not isinstance(loaded.get("tiers"), list):
                 state.settings["tiers"] = DEFAULT_SETTINGS["tiers"]
+            _enforce_tier_ranges(state.settings)
             print("Redis: настройки загружены")
             return
         except Exception as e:
@@ -54,6 +62,7 @@ def load_spot_settings():
             state.spot_settings.update(loaded)
             if "tiers" not in loaded or not isinstance(loaded.get("tiers"), list):
                 state.spot_settings["tiers"] = DEFAULT_SPOT_SETTINGS["tiers"]
+            _enforce_tier_ranges(state.spot_settings)
             print("Redis: спот-настройки загружены")
             return
         except Exception as e:

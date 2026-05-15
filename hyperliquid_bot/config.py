@@ -22,6 +22,15 @@ SETTINGS_FILE = "settings.json"
 SPOT_SETTINGS_FILE = "spot_settings.json"
 CUSTOM_DATA_FILE = "custom_data.json"
 
+# vol_from/vol_to hardcoded — пользователь меняет только min_wall через бота
+TIER_RANGES = [
+    {"vol_from": 10,   "vol_to": 50},
+    {"vol_from": 50,   "vol_to": 80},
+    {"vol_from": 100,  "vol_to": 300},
+    {"vol_from": 500,  "vol_to": 1000},
+    {"vol_from": 5000, "vol_to": 999999},
+]
+
 DEFAULT_SETTINGS = {
     "price_range_pct": 2.0,
     "cooldown_min": 5,
