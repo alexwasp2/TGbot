@@ -130,6 +130,7 @@ def check_orderbook_walls(symbol, bids, asks, market="futures"):
         send_message("\n".join(parts))
         cooldowns[symbol] = now
         candidates[wall_key] = 0
+        state.alert_counts[market][symbol] = state.alert_counts[market].get(symbol, 0) + 1
         print(f"Плотняха [{market_marker}]: {symbol} {fmt_usd(top['value'])}")
 
     except Exception as e:

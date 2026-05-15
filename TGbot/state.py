@@ -12,4 +12,5 @@ wall_cooldowns = {}
 spot_wall_cooldowns = {}
 symbol_volumes = {}
 spot_symbol_volumes = {}
+alert_counts = {"futures": {}, "spot": {}}
 user_state = {}
