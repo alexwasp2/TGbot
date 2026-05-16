@@ -63,5 +63,7 @@ def build_noise_report():
             {"text": f"{sym} S +50%", "callback_data": f"noise:spot:{sym}:50"},
         ])
 
+    keyboard.append([{"text": "▶️ Возобновить алерты", "callback_data": "resume_alerts"}])
+    state.alerts_paused = True
     send_report("\n".join(lines), inline_keyboard=keyboard)
     state.alert_counts = {"futures": {}, "spot": {}}

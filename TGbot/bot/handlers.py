@@ -395,3 +395,10 @@ async def noise_raise_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         f"✅ {symbol} ({market_label}): {fmt_usd(current)} → {fmt_usd(new_val)}",
         show_alert=True,
     )
+
+
+async def resume_alerts_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    state.alerts_paused = False
+    await query.answer("✅ Алерты возобновлены")
+    await query.edit_message_reply_markup(reply_markup=None)
