@@ -26,6 +26,7 @@ New module `monitor/volume_spikes.py` runs as a dedicated daemon thread started 
 ```python
 # state.py additions
 import collections
+import threading
 
 spike_settings = {
     "enabled": True,
@@ -40,6 +41,9 @@ spike_snapshots = collections.deque(maxlen=12)
 
 spike_cooldowns = {}
 # structure: {"BTC": 1748123456.0}  — timestamp of last alert per coin
+
+spike_lock = threading.Lock()
+# guards spike_snapshots — written by spike thread, read by bot handlers
 ```
 
 ## Monitoring Logic (`monitor/volume_spikes.py`)
@@ -47,16 +51,21 @@ spike_cooldowns = {}
 ```
 loop every interval_sec:
   if not spike_settings["enabled"]: sleep; continue
-  snapshot = get_hl_volume_data()
-  spike_snapshots.append({"timestamp": now, "volumes": snapshot})
-  if len(spike_snapshots) < 2: continue  # skip first iteration
 
-  prev = spike_snapshots[-2]["volumes"]
-  curr = spike_snapshots[-1]["volumes"]
+  try:
+    snapshot = get_hl_volume_data()
+  except Exception as e:
+    log(e); sleep; continue
+
+  with spike_lock:
+    spike_snapshots.append({"timestamp": now, "volumes": snapshot})
+    if len(spike_snapshots) < 2: continue  # skip first iteration
+    prev = spike_snapshots[-2]["volumes"]
+    curr = spike_snapshots[-1]["volumes"]
 
   for coin, vol_curr in curr.items():
     if vol_curr < min_volume_m * 1_000_000: skip
-    if coin not in prev: skip
+    if prev.get(coin, 0) == 0: skip          # missing or zero — no division
     pct = (vol_curr - prev[coin]) / prev[coin] * 100
     if pct < threshold_pct: skip
     if time.time() - spike_cooldowns.get(coin, 0) < cooldown_sec: skip
@@ -104,7 +113,9 @@ SPIKE_COOLDOWN_MIN  = 30
 - **Coin missing from prev snapshot**: skipped — new listing or API gap
 - **prev[coin] == 0**: skipped — avoids division by zero
 - **Bot restart**: snapshots reset to empty, cooldowns reset; first alert per coin fires after two intervals
-- **API error**: log and sleep, do not crash thread
+- **API error**: `try/except` wraps `get_hl_volume_data()` — log error, sleep interval, continue loop
+- **Division by zero**: `prev.get(coin, 0) == 0` check before division
+- **Thread safety**: `spike_lock` guards all reads/writes to `spike_snapshots`; bot handlers acquire lock before reading
 
 ## Out of Scope
 
