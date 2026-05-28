@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-from config import DEFAULT_SETTINGS, DEFAULT_SPOT_SETTINGS, TIER_RANGES, SETTINGS_FILE, SPOT_SETTINGS_FILE, VOLUME_FILE, CUSTOM_DATA_FILE
+from config import DEFAULT_SETTINGS, DEFAULT_SPOT_SETTINGS, TIER_RANGES, SETTINGS_FILE, SPOT_SETTINGS_FILE, VOLUME_FILE, CUSTOM_DATA_FILE, SPIKE_SETTINGS_FILE, SPIKE_THRESHOLD_PCT, SPIKE_INTERVAL_SEC, SPIKE_MIN_VOLUME_M, SPIKE_COOLDOWN_MIN
 import state
 from storage.redis_client import redis_get, redis_set
 
@@ -194,3 +194,44 @@ def save_volume_snapshot():
         print(f"Объём сохранён: {hour_key}")
     except Exception as e:
         print(f"Ошибка сохранения объёма: {e}")
+
+
+def load_spike_settings():
+    default = {
+        "enabled": True,
+        "threshold_pct": SPIKE_THRESHOLD_PCT,
+        "interval_sec": SPIKE_INTERVAL_SEC,
+        "min_volume_m": SPIKE_MIN_VOLUME_M,
+        "cooldown_min": SPIKE_COOLDOWN_MIN,
+    }
+    data = redis_get("spike_settings")
+    if data:
+        try:
+            loaded = json.loads(data)
+            if isinstance(loaded, str):
+                loaded = json.loads(loaded)
+            state.spike_settings = {**default, **loaded}
+            print("Redis: spike_settings загружены")
+            return
+        except Exception as e:
+            print(f"Redis spike ошибка: {e}")
+    if os.path.exists(SPIKE_SETTINGS_FILE):
+        try:
+            with open(SPIKE_SETTINGS_FILE, "r") as f:
+                loaded = json.load(f)
+            state.spike_settings = {**default, **loaded}
+            print("Файл: spike_settings загружены")
+            return
+        except Exception as e:
+            print(f"Ошибка файла spike: {e}")
+    state.spike_settings = default
+    print("Используются дефолт spike_settings")
+
+
+def save_spike_settings():
+    redis_set("spike_settings", json.dumps(state.spike_settings))
+    try:
+        with open(SPIKE_SETTINGS_FILE, "w") as f:
+            json.dump(state.spike_settings, f)
+    except Exception as e:
+        print(f"Ошибка сохранения spike_settings: {e}")
