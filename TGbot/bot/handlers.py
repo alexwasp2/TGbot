@@ -41,6 +41,20 @@ async def railway_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+def _spike_status_msg(prefix=""):
+    s = state.spike_settings
+    status = "✅ Включён" if s.get("enabled", True) else "⏸ Выключен"
+    return (
+        f"{prefix}"
+        f"📈 <b>Volume Spikes</b>\n\n"
+        f"Статус: {status}\n"
+        f"Порог: {s['threshold_pct']}%\n"
+        f"Интервал: {s['interval_sec']}с\n"
+        f"Мин. объём: ${s['min_volume_m']}M\n"
+        f"Кулдаун: {s['cooldown_min']} мин"
+    )
+
+
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     text = update.message.text.strip()
@@ -86,17 +100,8 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if text == "📈 Спайки":
         state.user_state.pop(uid, None)
-        state.users_in_settings.discard(uid)
-        s = state.spike_settings
-        status = "✅ Включён" if s.get("enabled", True) else "⏸ Выключен"
-        msg = (
-            f"📈 <b>Volume Spikes</b>\n\n"
-            f"Статус: {status}\n"
-            f"Порог: {s['threshold_pct']}%\n"
-            f"Интервал: {s['interval_sec']}с\n"
-            f"Мин. объём: ${s['min_volume_m']}M\n"
-            f"Кулдаун: {s['cooldown_min']} мин"
-        )
+        state.users_in_settings.add(uid)
+        msg = _spike_status_msg()
         await update.message.reply_text(msg, parse_mode="HTML", reply_markup=spike_menu_keyboard())
         state.user_state[uid] = {"mode": "spike_menu"}
         return
@@ -334,21 +339,13 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if mode == "spike_menu":
         if text == "🔙 Назад":
             state.user_state.pop(uid, None)
+            state.users_in_settings.discard(uid)
             await update.message.reply_text("👋 <b>Главное меню</b>", parse_mode="HTML", reply_markup=main_menu_keyboard())
             return
         if text in ("⏸ Выключить спайки", "▶️ Включить спайки"):
             state.spike_settings["enabled"] = not state.spike_settings.get("enabled", True)
             save_spike_settings()
-            s = state.spike_settings
-            status = "✅ Включён" if s["enabled"] else "⏸ Выключен"
-            msg = (
-                f"📈 <b>Volume Spikes</b>\n\n"
-                f"Статус: {status}\n"
-                f"Порог: {s['threshold_pct']}%\n"
-                f"Интервал: {s['interval_sec']}с\n"
-                f"Мин. объём: ${s['min_volume_m']}M\n"
-                f"Кулдаун: {s['cooldown_min']} мин"
-            )
+            msg = _spike_status_msg()
             await update.message.reply_text(msg, parse_mode="HTML", reply_markup=spike_menu_keyboard())
             return
         prompts = {
@@ -367,17 +364,10 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         key = state.user_state.get(uid, {}).get("key")
         if text == "🔙 Назад":
             state.user_state[uid] = {"mode": "spike_menu"}
-            s = state.spike_settings
-            status = "✅ Включён" if s.get("enabled", True) else "⏸ Выключен"
-            msg = (
-                f"📈 <b>Volume Spikes</b>\n\n"
-                f"Статус: {status}\n"
-                f"Порог: {s['threshold_pct']}%\n"
-                f"Интервал: {s['interval_sec']}с\n"
-                f"Мин. объём: ${s['min_volume_m']}M\n"
-                f"Кулдаун: {s['cooldown_min']} мин"
-            )
+            msg = _spike_status_msg()
             await update.message.reply_text(msg, parse_mode="HTML", reply_markup=spike_menu_keyboard())
+            return
+        if key is None:
             return
         try:
             val = float(text.replace(",", "."))
@@ -386,17 +376,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             state.spike_settings[key] = val
             save_spike_settings()
             state.user_state[uid] = {"mode": "spike_menu"}
-            s = state.spike_settings
-            status = "✅ Включён" if s.get("enabled", True) else "⏸ Выключен"
-            msg = (
-                f"✅ Сохранено!\n\n"
-                f"📈 <b>Volume Spikes</b>\n\n"
-                f"Статус: {status}\n"
-                f"Порог: {s['threshold_pct']}%\n"
-                f"Интервал: {s['interval_sec']}с\n"
-                f"Мин. объём: ${s['min_volume_m']}M\n"
-                f"Кулдаун: {s['cooldown_min']} мин"
-            )
+            msg = _spike_status_msg("✅ Сохранено!\n\n")
             await update.message.reply_text(msg, parse_mode="HTML", reply_markup=spike_menu_keyboard())
         except ValueError:
             await update.message.reply_text("❌ Введи число", parse_mode="HTML", reply_markup=back_keyboard())
