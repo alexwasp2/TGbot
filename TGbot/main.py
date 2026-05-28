@@ -1,12 +1,15 @@
 import requests
 import threading
 import time
+from dotenv import load_dotenv
+load_dotenv()
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from config import TG_BOT_TOKEN, TG_CHAT_ID
-from storage.persistence import load_settings, load_spot_settings, load_volume_history, load_custom_data
+from storage.persistence import load_settings, load_spot_settings, load_volume_history, load_custom_data, load_spike_settings
 from monitor.positions import monitor_loop
+from monitor.volume_spikes import volume_spike_thread
 from api.binance import binance_thread
 from bot.handlers import start, message_handler, railway_command, noise_raise_callback, resume_alerts_callback
 from bot.noise_report import build_noise_report
@@ -29,6 +32,7 @@ def main():
     load_spot_settings()
     load_volume_history()
     load_custom_data()
+    load_spike_settings()
     print("✅ Монитор запущен!")
 
     url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
@@ -44,6 +48,7 @@ def main():
     threading.Thread(target=monitor_loop, daemon=True).start()
     threading.Thread(target=binance_thread, daemon=True).start()
     threading.Thread(target=daily_report_thread, daemon=True).start()
+    threading.Thread(target=volume_spike_thread, daemon=True).start()
 
     app = Application.builder().token(TG_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
