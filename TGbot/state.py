@@ -26,5 +26,5 @@ spike_settings = {
     "cooldown_min": 30,
 }
 spike_snapshots = collections.deque(maxlen=12)
-spike_cooldowns = {}
+spike_cooldowns = {}  # written only by volume_spike_thread — do not access from bot handlers
 spike_lock = threading.Lock()

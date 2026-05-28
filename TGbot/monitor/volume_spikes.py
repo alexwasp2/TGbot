@@ -33,6 +33,7 @@ def _send_spike_alert(alert: dict):
 
 
 def volume_spike_thread():
+    # spike_cooldowns is accessed only from this thread — no lock needed for it
     while True:
         interval = state.spike_settings.get("interval_sec", 300)
         try:
