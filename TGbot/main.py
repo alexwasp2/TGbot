@@ -1,8 +1,11 @@
+import logging
 import requests
 import threading
 import time
 from dotenv import load_dotenv
 load_dotenv()
+
+logging.getLogger("websockets").setLevel(logging.CRITICAL)
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
