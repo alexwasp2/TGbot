@@ -58,3 +58,9 @@ DEFAULT_SPOT_SETTINGS = {
         {"vol_from": 5000, "vol_to": 999999, "min_wall": 3000},
     ]
 }
+
+SPIKE_SETTINGS_FILE = "spike_settings.json"
+SPIKE_THRESHOLD_PCT = 50
+SPIKE_INTERVAL_SEC = 300
+SPIKE_MIN_VOLUME_M = 10
+SPIKE_COOLDOWN_MIN = 30
