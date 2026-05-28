@@ -6,7 +6,8 @@ def main_menu_keyboard():
     pause_label = "▶️ Возобновить" if state.alerts_paused else "⏸ Пауза"
     return ReplyKeyboardMarkup([
         ["📊 Аналитика", "⚙️ Настройки"],
-        ["👛 Кошельки", pause_label],
+        ["👛 Кошельки", "📈 Спайки"],
+        [pause_label],
     ], resize_keyboard=True)
 
 
@@ -41,5 +42,15 @@ def railway_keyboard():
     return ReplyKeyboardMarkup([
         ["⛔ Остановить деплой"],
         ["▶️ Запустить деплой"],
+        ["🔙 Назад"],
+    ], resize_keyboard=True)
+
+
+def spike_menu_keyboard():
+    toggle = "⏸ Выключить спайки" if state.spike_settings.get("enabled", True) else "▶️ Включить спайки"
+    return ReplyKeyboardMarkup([
+        [toggle],
+        ["🎯 Порог", "⏱ Интервал"],
+        ["📊 Мин. объём", "🕐 Кулдаун"],
         ["🔙 Назад"],
     ], resize_keyboard=True)
